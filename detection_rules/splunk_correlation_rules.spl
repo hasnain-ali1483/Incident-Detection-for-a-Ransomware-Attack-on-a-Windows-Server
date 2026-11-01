@@ -1,0 +1,92 @@
+# =========================================================================================
+# SPLUNK DETECTION & CORRELATION RULES: RANSOMWARE ON WINDOWS SERVER
+# MITRE ATT&CK FRAMEWORK MAPPING
+# =========================================================================================
+
+# -----------------------------------------------------------------------------------------
+# RULE 1: Volume Shadow Copy Deletion (T1490 - Inhibit System Recovery)
+# Severity: CRITICAL
+# Telemetry: Windows Security Event 4688 / Sysmon Event ID 1
+# -----------------------------------------------------------------------------------------
+index=wineventlog (sourcetype="WinEventLog:Security" OR sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational")
+(
+  (EventCode=1 OR EventCode=4688) 
+  AND (
+    (CommandLine="*vssadmin*" AND CommandLine="*delete*" AND CommandLine="*shadows*")
+    OR (CommandLine="*wmic*" AND CommandLine="*shadowcopy*" AND CommandLine="*delete*")
+    OR (CommandLine="*wbadmin*" AND CommandLine="*delete*" AND CommandLine="*catalog*")
+  )
+)
+| eval Alert_Title="Inhibit System Recovery: Volume Shadow Copy Deletion"
+| eval Severity="CRITICAL"
+| table _time, host, user, ParentImage, Image, CommandLine, Severity, Alert_Title
+
+
+# -----------------------------------------------------------------------------------------
+# RULE 2: Boot Configuration Tampering via BCDEdit (T1490 - Inhibit System Recovery)
+# Severity: HIGH
+# Telemetry: Windows Security Event 4688 / Sysmon Event ID 1
+# -----------------------------------------------------------------------------------------
+index=wineventlog (EventCode=1 OR EventCode=4688) Image="*\\bcdedit.exe"
+(CommandLine="*recoveryenabled*No*" OR CommandLine="*bootstatuspolicy*ignoreallfailures*")
+| eval Alert_Title="Defense Evasion / Inhibit Recovery: Windows Recovery Disabled"
+| eval Severity="HIGH"
+| table _time, host, user, ParentImage, Image, CommandLine, Severity
+
+
+# -----------------------------------------------------------------------------------------
+# RULE 3: Mass File Extension Renaming to Ransomware Suffix (T1486 - Data Encrypted for Impact)
+# Severity: CRITICAL
+# Telemetry: Sysmon Event ID 11 (FileCreate / FileRename)
+# Threshold: > 10 files modified within a 1-minute time window
+# -----------------------------------------------------------------------------------------
+index=wineventlog sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=11 TargetFilename="*.locked"
+| bin _time span=1m
+| stats count as EncryptedFileCount, values(TargetFilename) as SampleFiles by _time, host, Image, ProcessId
+| where EncryptedFileCount >= 10
+| eval Alert_Title="High Velocity File Encryption Detected (.locked)"
+| eval Severity="CRITICAL"
+| table _time, host, Image, ProcessId, EncryptedFileCount, SampleFiles, Severity
+
+
+# -----------------------------------------------------------------------------------------
+# RULE 4: Ransom Note Drop Detection (T1491 - Defacement / Impact)
+# Severity: HIGH
+# Telemetry: Sysmon Event ID 11 (FileCreate)
+# -----------------------------------------------------------------------------------------
+index=wineventlog sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=11
+(TargetFilename="*README_RESTORE.txt" OR TargetFilename="*DECRYPT_INFO.txt" OR TargetFilename="*RESTORE_FILES*.txt" OR TargetFilename="*HOW_TO_DECRYPT*")
+| eval Alert_Title="Ransom Note File Dropped"
+| eval Severity="HIGH"
+| table _time, host, Image, TargetFilename, Severity
+
+
+# -----------------------------------------------------------------------------------------
+# RULE 5: Suspicious Encoded / Evasive PowerShell Execution (T1059.001)
+# Severity: HIGH
+# Telemetry: Windows Security Event 4688 / Sysmon Event ID 1
+# -----------------------------------------------------------------------------------------
+index=wineventlog (EventCode=1 OR EventCode=4688) Image="*\\powershell.exe"
+(CommandLine="*-enc*" OR CommandLine="*-EncodedCommand*" OR CommandLine="*-ExecutionPolicy Bypass*" OR CommandLine="*-w hidden*")
+| eval Alert_Title="Suspicious Encoded / Evasive PowerShell Execution"
+| eval Severity="HIGH"
+| table _time, host, user, ParentImage, CommandLine, Severity
+
+
+# -----------------------------------------------------------------------------------------
+# DASHBOARD QUERY: Ransomware Attack Timeline (Correlated Investigation View)
+# -----------------------------------------------------------------------------------------
+index=wineventlog (
+  (EventCode=1 AND (CommandLine="*vssadmin*" OR CommandLine="*bcdedit*"))
+  OR (EventCode=11 AND (TargetFilename="*.locked" OR TargetFilename="*README_RESTORE.txt"))
+  OR (EventCode=3 AND DestinationPort=8080)
+)
+| eval Activity=case(
+    like(CommandLine, "%vssadmin%"), "Shadow Copy Deletion",
+    like(CommandLine, "%bcdedit%"), "Recovery Disabling",
+    like(TargetFilename, "%.locked"), "File Encryption",
+    like(TargetFilename, "%README%"), "Ransom Note Dropped",
+    EventCode==3, "Outbound C2 Communication",
+    1==1, "Other Activity"
+  )
+| timechart span=1m count by Activity

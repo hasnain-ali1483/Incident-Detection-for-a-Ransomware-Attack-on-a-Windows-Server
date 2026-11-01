@@ -1,0 +1,41 @@
+<Sysmon schemaversion="4.90">
+  <!-- Hash algorithms to compute for process binaries -->
+  <HashAlgorithms>md5,sha256</HashAlgorithms>
+  <EventFiltering>
+    <!-- Event ID 1: Process Creation - Log suspicious commands and process spawning -->
+    <RuleGroup name="ProcessCreation" groupRelation="or">
+      <ProcessCreate onmatch="include">
+        <Image condition="end with">vssadmin.exe</Image>
+        <Image condition="end with">wmic.exe</Image>
+        <Image condition="end with">bcdedit.exe</Image>
+        <Image condition="end with">wbadmin.exe</Image>
+        <Image condition="end with">powershell.exe</Image>
+        <Image condition="end with">cmd.exe</Image>
+        <CommandLine condition="contains">delete shadows</CommandLine>
+        <CommandLine condition="contains">shadowcopy delete</CommandLine>
+        <CommandLine condition="contains">recoveryenabled</CommandLine>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- Event ID 3: Network Connection Detected - Log outbound C2 beacons -->
+    <RuleGroup name="NetworkConnections" groupRelation="or">
+      <NetworkConnect onmatch="include">
+        <DestinationPort condition="is">8080</DestinationPort>
+        <DestinationPort condition="is">4444</DestinationPort>
+        <DestinationPort condition="is">3389</DestinationPort>
+        <Image condition="end with">powershell.exe</Image>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- Event ID 11: File Create & Rename - Detect mass encryption extensions & ransom notes -->
+    <RuleGroup name="FileCreation" groupRelation="or">
+      <FileCreate onmatch="include">
+        <TargetFilename condition="end with">.locked</TargetFilename>
+        <TargetFilename condition="end with">.crypto</TargetFilename>
+        <TargetFilename condition="end with">.enc</TargetFilename>
+        <TargetFilename condition="contains">README_RESTORE.txt</TargetFilename>
+        <TargetFilename condition="contains">DECRYPT_INFO.txt</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+  </EventFiltering>
+</Sysmon>

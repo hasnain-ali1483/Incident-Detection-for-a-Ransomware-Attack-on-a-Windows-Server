@@ -1,0 +1,33 @@
+# Virtual Machines & Disks
+*.vdi
+*.vmdk
+*.vhd
+*.vhdx
+*.ova
+*.ovf
+*.vbox
+*.vbox-prev
+*.vmx
+*.vmxf
+*.vmsd
+*.nvram
+*.iso
+*.7z
+*.rar
+*.tar
+*.gz
+
+# Temporary / OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Logs
+*.log
+*.tmp
+
+# Office temp locks
+~$*.docx
+~$*.xlsx

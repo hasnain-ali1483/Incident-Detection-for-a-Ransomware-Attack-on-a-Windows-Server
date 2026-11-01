@@ -1,0 +1,93 @@
+<!--
+=============================================================================================
+  WAZUH CUSTOM DETECTION RULES: RANSOMWARE DETECTION ON WINDOWS SERVER 2022
+  AUTHOR: Mohammad Hasnain Ali
+  TARGET PLATFORM: Windows Server 2022 (192.168.56.103) with Sysmon & Event Ingestion
+  FILE LOCATION ON WAZUH SERVER: /var/ossec/etc/rules/local_rules.xml
+  MITRE ATT&CK MAPPINGS: T1490, T1486, T1491, T1110, T1059.001
+=============================================================================================
+-->
+
+<group name="windows,sysmon,ransomware,">
+
+  <!-- =================================================================== -->
+  <!-- RULE 100100: CRITICAL - Volume Shadow Copy Deletion (MITRE T1490)   -->
+  <!-- =================================================================== -->
+  <rule id="100100" level="14">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.commandLine">delete shadows</field>
+    <description>CRITICAL: Ransomware Behavior Detected - Volume Shadow Copies Deletion (MITRE T1490)</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>pci_dss_10.6.1,gdpr_IV_35.7.d,inhibit_recovery,ransomware,</group>
+  </rule>
+
+  <!-- =================================================================== -->
+  <!-- RULE 100101: HIGH - Boot Configuration Recovery Disabled (T1490)   -->
+  <!-- =================================================================== -->
+  <rule id="100101" level="12">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.commandLine">recoveryenabled</field>
+    <description>CRITICAL: Ransomware Defense Evasion - Boot Recovery Disabled via BCDedit (MITRE T1490)</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>inhibit_recovery,defense_evasion,ransomware,</group>
+  </rule>
+
+  <!-- =================================================================== -->
+  <!-- RULE 100010: Generalized Shadow Copy & Catalog Deletion Engine     -->
+  <!-- =================================================================== -->
+  <rule id="100010" level="14">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)vssadmin\.exe|wmic\.exe|wbadmin\.exe</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(delete\s+shadows|shadowcopy\s+delete|delete\s+catalog)</field>
+    <description>CRITICAL: Potential Ransomware Activity - Volume Shadow Copies deleted to inhibit system recovery (MITRE T1490)</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>inhibit_recovery,ransomware,</group>
+  </rule>
+
+  <!-- =================================================================== -->
+  <!-- RULE 100012: Ransom Note File Dropped (MITRE T1491 / T1486)         -->
+  <!-- =================================================================== -->
+  <rule id="100012" level="12">
+    <if_group>sysmon_event_11</if_group>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)(README_HOW_TO_RECOVER\.txt|README_RESTORE\.txt|DECRYPT_INFO\.txt)</field>
+    <description>HIGH: Ransomware Extortion Note Dropped on File System (MITRE T1491)</description>
+    <mitre>
+      <id>T1491</id>
+      <id>T1486</id>
+    </mitre>
+    <group>ransomware_impact,</group>
+  </rule>
+
+  <!-- =================================================================== -->
+  <!-- RULE 100013: Ransomware Encrypted Extension Creation (.locked)      -->
+  <!-- =================================================================== -->
+  <rule id="100013" level="10">
+    <if_group>sysmon_event_11</if_group>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\.(locked|crypto|enc)$</field>
+    <description>Suspicious File Created with Ransomware Suffix (.locked / .crypto)</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+    <group>ransomware_encryption,</group>
+  </rule>
+
+  <!-- =================================================================== -->
+  <!-- RULE 100014: High Velocity Mass Encryption Threshold (> 8 in 30s)   -->
+  <!-- =================================================================== -->
+  <rule id="100014" level="15" frequency="8" timeframe="30">
+    <if_matched_sid>100013</if_matched_sid>
+    <same_field>win.eventdata.image</same_field>
+    <description>CRITICAL ALERT: Active Ransomware Mass Encryption Routine Detected! Multiple files renamed to ransomware extensions in under 30 seconds (MITRE T1486)</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+    <group>active_ransomware,pci_dss_10.6.1,</group>
+  </rule>
+
+</group>
