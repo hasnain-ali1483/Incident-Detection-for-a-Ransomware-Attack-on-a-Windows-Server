@@ -15,7 +15,7 @@ Enterprise Incident Detection & Response: Ransomware on Windows Server 2022
 
 ---
 
-## ðŸ“Œ Project Overview
+Project Overview
 
 This repository documents an end-to-end **Security Operations Center (SOC) Detection and Incident Response** project investigating a simulated multi-stage ransomware attack against an enterprise Windows Server 2022 system. 
 
@@ -30,7 +30,7 @@ The lab replicates a realistic adversary campaign including:
 
 ---
 
-## ðŸ›ï¸ Lab Architecture & Network Topology
+Lab Architecture & Network Topology
 
 The environment runs on **Oracle VirtualBox 7.x** using an isolated host-only virtual switch (`192.168.56.0/24`):
 
@@ -71,7 +71,7 @@ The environment runs on **Oracle VirtualBox 7.x** using an isolated host-only vi
 
 ---
 
-## âš™ï¸ Telemetry Hardening & Detection Engineering
+## Telemetry Hardening & Detection Engineering
 
 ### 1. Endpoint Instrumentation
 * **Sysmon v15:** Installed using [SwiftOnSecurity's schema](configs/sysmonconfig-ransomware.xml) to capture command-line arguments, parent process IDs, and hashes (`Event ID 1`).
@@ -103,7 +103,7 @@ Custom rules were deployed to `/var/ossec/etc/rules/local_rules.xml` on the Wazu
 
 ---
 
-## ðŸ“Š Comprehensive Inventory of Rules Triggered
+## Comprehensive Inventory of Rules Triggered
 
 | Rule ID | Severity Level | Rule Group | Description & Signature Match | MITRE ATT&CK |
 | :---: | :---: | :---: | :--- | :--- |
@@ -120,7 +120,7 @@ Custom rules were deployed to `/var/ossec/etc/rules/local_rules.xml` on the Wazu
 
 ---
 
-## ðŸš€ Chronological Attack Simulation & Evidence Showcase
+## Chronological Attack Simulation & Evidence Showcase
 
 ### 1. Network Reconnaissance (T1046)
 The adversary scans the target Windows Server (`192.168.56.103`) to identify attack vectors:
@@ -206,7 +206,7 @@ Remove-Item "$targetFolder\README_HOW_TO_RECOVER.txt" -Force
 
 ---
 
-## ðŸ“ Repository Directory Structure
+## Repository Directory Structure
 
 ```text
 â”œâ”€â”€ .gitignore                                  # Git exclusion file for VMs, ISOs, and temp files
@@ -266,7 +266,7 @@ Remove-Item "$targetFolder\README_HOW_TO_RECOVER.txt" -Force
 
 ---
 
-## ðŸ› ï¸ Step-by-Step Reproduction Guide
+## Step-by-Step Reproduction Guide
 
 1. **Setup Isolated Virtual Network:** In VirtualBox, create a Host-Only adapter (`192.168.56.0/24`). Attach Ubuntu, Windows Server 2022, and Kali Linux to this adapter.
 2. **Deploy Wazuh All-in-One:** Install Wazuh SIEM on Ubuntu 22.04 using `bash ./wazuh-install.sh -a`. Add custom rules from `detection_rules/wazuh_custom_rules.xml` to `/var/ossec/etc/rules/local_rules.xml`.
@@ -277,7 +277,7 @@ Remove-Item "$targetFolder\README_HOW_TO_RECOVER.txt" -Force
 
 ---
 
-## ðŸ‘¤ Author & Acknowledgments
+## Author & Acknowledgments
 
 * **Project Lead:** Mohammad Hasnain Ali
 * **Specialization:** Cybersecurity / SOC Operations / Threat Hunting & Incident Response
