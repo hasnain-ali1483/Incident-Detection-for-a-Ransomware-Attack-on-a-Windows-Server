@@ -1,4 +1,4 @@
-﻿# ðŸ›¡ï¸ Enterprise Incident Detection & Response: Ransomware on Windows Server 2022
+Enterprise Incident Detection & Response: Ransomware on Windows Server 2022
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20Server%202022-0078D6?logo=windows&logoColor=white)](#)
 [![SIEM](https://img.shields.io/badge/SIEM-Wazuh%20v4.9.2-005B94?logo=wazuh&logoColor=white)](#)
